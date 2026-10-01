@@ -441,11 +441,10 @@ function updatePlaceScale(){ // keep pins a constant on-screen size
 /* ---- predefined destinations ----------------------------------------- */
 /* Only these show a red pin. Add more as {name, lng, lat}. lng first, then lat. */
 const PLACES=[
-  {name:"សាច់គោងៀត", lng:104.81659372797475, lat:11.57151299561483},
+  {name:"សាច់គោងៀត", lng:104.816734, lat:11.570834},
 ];
 // When the user is OUTSIDE the borey (or has no GPS), routes start here instead.
-// 11°34'17.5"N 104°48'59.7"E
-const FALLBACK_START=[104.816583,11.571528];
+const FALLBACK_START=[104.818347,11.571888];
 function insideBorey(ll){ // point-in-polygon against the borey boundary
   const poly=DATA.borey; if(!poly||!ll)return true;
   let x=ll[0],y=ll[1],inside=false;

@@ -490,6 +490,8 @@
 <text x="573.8" y="397.9" transform="rotate(-90 573.8 397.9)" font-size="16" fill="#3a4452" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">New Street (10m)</text>
 <text x="247.9" y="8.7" transform="rotate(0 247.9 8.7)" font-size="16" fill="#3a4452" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">St Betong</text>
 <text x="247.9" y="765.8" transform="rotate(0 247.9 765.8)" font-size="16" fill="#3a4452" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">Concrete Road</text>
-<g transform="translate(34.3 248.9)"><path d="M0 0 c -6 -9 -9 -12 -9 -18 a9 9 0 1 1 18 0 c 0 6 -3 9 -9 18 Z" fill="#e23b3b" stroke="#fff" stroke-width="1.5"/><circle cx="0" cy="-18" r="3.2" fill="#fff"/></g>
-<text x="34.3" y="258.9" font-size="15" fill="#c0392b" text-anchor="middle" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">សាច់គោងៀត</text>
+<circle cx="210.0" cy="243.8" r="7" fill="#1e9e52" stroke="#fff" stroke-width="2"/>
+<text x="210.0" y="229.8" font-size="13" fill="#1e7e3e" text-anchor="middle" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">entrance (fallback start)</text>
+<text x="35.2" y="286.2" font-size="14" fill="#c0392b" text-anchor="middle" font-family="sans-serif" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">សាច់គោងៀត</text>
+<g transform="translate(35.2 318.2)"><path d="M0 0 c -6 -9 -9 -12 -9 -18 a9 9 0 1 1 18 0 c 0 6 -3 9 -9 18 Z" fill="#e23b3b" stroke="#fff" stroke-width="1.5"/><circle cx="0" cy="-18" r="3.2" fill="#fff"/></g>
 </svg>
