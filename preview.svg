@@ -403,8 +403,7 @@
 <path d="M50.4 637.4 L88.0 638.0 L87.8 650.4 L50.1 649.8 L50.4 637.4 Z" fill="#dfe4ea" stroke="#c4ccd6" stroke-width="0.5"/>
 <path d="M50.2 622.0 L87.8 622.7 L87.6 635.1 L49.9 634.4 L50.2 622.0 Z" fill="#dfe4ea" stroke="#c4ccd6" stroke-width="0.5"/>
 <path d="M572.7 538.1 L552.0 538.1 L436.0 537.5 L315.0 537.8 L181.0 538.6 L47.7 539.3 L26.6 538.8" fill="none" stroke="#c9d2dc" stroke-width="3"/>
-<path d="M6.8 9.4 L7.1 55.5 L7.0 93.8 L6.9 105.8 L6.8 133.0 L6.4 217.9 L6.1 297.1 L5.7 377.7 L5.7 387.6 L5.5 430.3 L5.3 458.9 L5.0 538.3 L4.7 619.0 L3.1 717.4" fill="none" stroke="#e6c968" stroke-width="7"/>
-<path d="M6.8 9.4 L7.1 55.5 L7.0 93.8 L6.9 105.8 L6.8 133.0 L6.4 217.9 L6.1 297.1 L5.7 377.7 L5.7 387.6 L5.5 430.3 L5.3 458.9 L5.0 538.3 L4.7 619.0 L3.1 717.4" fill="none" stroke="#ffe9a8" stroke-width="5"/>
+<path d="M6.8 9.4 L7.1 55.5 L7.0 93.8 L6.9 105.8 L6.8 133.0 L6.4 217.9 L6.1 297.1 L5.7 377.7 L5.7 387.6 L5.5 430.3 L5.3 458.9 L5.0 538.3 L4.7 619.0 L3.1 717.4" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M6.8 133.0 L47.4 133.1 L182.6 133.7 L315.7 134.3 L409.9 134.3 L556.2 134.7 L574.9 134.7" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M7.0 93.8 L47.4 93.8 L182.6 93.7 L315.8 93.6 L409.3 93.6 L557.0 93.4 L574.8 93.4" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M7.1 55.5 L47.1 55.1 L182.8 53.9 L315.9 52.7 L408.8 51.9 L574.8 51.4" fill="none" stroke="#c9d2dc" stroke-width="3"/>
@@ -432,8 +431,7 @@
 <path d="M574.3 8.0 L574.6 31.7 L574.8 51.4 L574.8 93.4 L574.9 134.7 L574.7 174.0 L574.5 203.8 L574.6 213.9 L574.5 254.8 L573.9 296.9 L574.0 303.1 L573.9 336.7 L573.9 377.7 L573.8 389.7 L573.8 418.1 L573.7 458.3 L573.5 480.1 L573.4 498.5 L572.7 538.1 L571.9 577.7 L571.1 618.5 L570.6 643.8 L570.3 658.1 L569.6 698.0 L568.8 738.6 L567.8 791.5 L566.7 825.4" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M574.5 203.8 L576.3 203.8" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M6.8 9.4 L6.2 0.0" fill="none" stroke="#c9d2dc" stroke-width="3"/>
-<path d="M577.2 7.8 L574.3 8.0 L520.7 7.8 L479.4 8.0 L408.3 8.2 L385.5 8.2 L316.0 8.5 L296.1 8.6 L197.6 8.9 L183.0 9.0 L97.3 9.2 L6.8 9.4" fill="none" stroke="#e6c968" stroke-width="7"/>
-<path d="M577.2 7.8 L574.3 8.0 L520.7 7.8 L479.4 8.0 L408.3 8.2 L385.5 8.2 L316.0 8.5 L296.1 8.6 L197.6 8.9 L183.0 9.0 L97.3 9.2 L6.8 9.4" fill="none" stroke="#ffe9a8" stroke-width="5"/>
+<path d="M577.2 7.8 L574.3 8.0 L520.7 7.8 L479.4 8.0 L408.3 8.2 L385.5 8.2 L316.0 8.5 L296.1 8.6 L197.6 8.9 L183.0 9.0 L97.3 9.2 L6.8 9.4" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M296.0 0.2 L296.1 8.6" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M5.7 387.6 L0.5 387.6" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M574.0 303.1 L575.9 303.0" fill="none" stroke="#c9d2dc" stroke-width="3"/>
@@ -457,8 +455,7 @@
 <path d="M316.0 8.5 L315.9 34.1" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M183.0 9.0 L182.9 19.6" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M39.1 721.2 L43.8 698.7" fill="none" stroke="#c9d2dc" stroke-width="3"/>
-<path d="M10.1 718.8 L13.6 718.4 L23.9 718.7 L39.1 721.2 L170.8 749.3 L306.0 778.2 L529.6 825.9 L542.4 829.4 L550.6 832.8" fill="none" stroke="#e6c968" stroke-width="7"/>
-<path d="M10.1 718.8 L13.6 718.4 L23.9 718.7 L39.1 721.2 L170.8 749.3 L306.0 778.2 L529.6 825.9 L542.4 829.4 L550.6 832.8" fill="none" stroke="#ffe9a8" stroke-width="5"/>
+<path d="M10.1 718.8 L13.6 718.4 L23.9 718.7 L39.1 721.2 L170.8 749.3 L306.0 778.2 L529.6 825.9 L542.4 829.4 L550.6 832.8" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M385.5 8.2 L385.6 0.3" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M575.5 389.7 L573.8 389.7" fill="none" stroke="#c9d2dc" stroke-width="3"/>
 <path d="M0.4 430.6 L5.5 430.3" fill="none" stroke="#c9d2dc" stroke-width="3"/>
@@ -490,8 +487,10 @@
 <text x="573.8" y="397.9" transform="rotate(-90 573.8 397.9)" font-size="16" fill="#3a4452" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">New Street (10m)</text>
 <text x="247.9" y="8.7" transform="rotate(0 247.9 8.7)" font-size="16" fill="#3a4452" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">St Betong</text>
 <text x="247.9" y="765.8" transform="rotate(0 247.9 765.8)" font-size="16" fill="#3a4452" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">Concrete Road</text>
-<circle cx="210.0" cy="243.8" r="7" fill="#1e9e52" stroke="#fff" stroke-width="2"/>
-<text x="210.0" y="229.8" font-size="13" fill="#1e7e3e" text-anchor="middle" font-family="sans-serif" paint-order="stroke" stroke="#eef1f4" stroke-width="3">entrance (fallback start)</text>
-<text x="35.2" y="286.2" font-size="14" fill="#c0392b" text-anchor="middle" font-family="sans-serif" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">សាច់គោងៀត</text>
+<text x="35.2" y="286.2" font-size="14" fill="#c0392b" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">សាច់គោងៀត</text>
 <g transform="translate(35.2 318.2)"><path d="M0 0 c -6 -9 -9 -12 -9 -18 a9 9 0 1 1 18 0 c 0 6 -3 9 -9 18 Z" fill="#e23b3b" stroke="#fff" stroke-width="1.5"/><circle cx="0" cy="-18" r="3.2" fill="#fff"/></g>
+<text x="39.4" y="36.6" font-size="14" fill="#c0392b" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">ត្រីអាំង</text>
+<g transform="translate(39.4 68.6)"><path d="M0 0 c -6 -9 -9 -12 -9 -18 a9 9 0 1 1 18 0 c 0 6 -3 9 -9 18 Z" fill="#e23b3b" stroke="#fff" stroke-width="1.5"/><circle cx="0" cy="-18" r="3.2" fill="#fff"/></g>
+<text x="191.8" y="113.4" font-size="14" fill="#c0392b" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">ដូងគ្រីម</text>
+<g transform="translate(191.8 145.4)"><path d="M0 0 c -6 -9 -9 -12 -9 -18 a9 9 0 1 1 18 0 c 0 6 -3 9 -9 18 Z" fill="#e23b3b" stroke="#fff" stroke-width="1.5"/><circle cx="0" cy="-18" r="3.2" fill="#fff"/></g>
 </svg>
