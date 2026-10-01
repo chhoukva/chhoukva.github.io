@@ -334,7 +334,7 @@ function buildSteps(pathKeys){
 }
 
 /* ---- rendering -------------------------------------------------------- */
-let gRoute,gMarkers,gPlaces,userDot,userAcc;
+let gRoute,gMarkers,gPlaces,userDot,userAcc,startDot;
 function pathD(coords){return coords.map((c,i)=>{const p=PROJ.pt(c);return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1);}).join(" ");}
 function render(){
   svg.innerHTML="";
@@ -415,7 +415,8 @@ function render(){
   // user dot
   userAcc=el("circle",{r:0,fill:"rgba(26,115,232,.15)",stroke:"none"});
   userDot=el("circle",{r:5,fill:"var(--user)",stroke:"#fff","stroke-width":"2","vector-effect":"non-scaling-stroke",style:"display:none"});
-  gMarkers.appendChild(userAcc);gMarkers.appendChild(userDot);
+  startDot=el("circle",{r:6,fill:"#1e9e52",stroke:"#fff","stroke-width":"2","vector-effect":"non-scaling-stroke",style:"display:none"});
+  gMarkers.appendChild(userAcc);gMarkers.appendChild(startDot);gMarkers.appendChild(userDot);
   renderPlaces();
   updateLabelScale();
 }
@@ -442,6 +443,18 @@ function updatePlaceScale(){ // keep pins a constant on-screen size
 const PLACES=[
   {name:"សាច់គោងៀត", lng:104.81659372797475, lat:11.57151299561483},
 ];
+// When the user is OUTSIDE the borey (or has no GPS), routes start here instead.
+// 11°34'17.5"N 104°48'59.7"E
+const FALLBACK_START=[104.816583,11.571528];
+function insideBorey(ll){ // point-in-polygon against the borey boundary
+  const poly=DATA.borey; if(!poly||!ll)return true;
+  let x=ll[0],y=ll[1],inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
 
 /* ---- geolocation ------------------------------------------------------ */
 let userLL=null, tracking=false, watchId=null;
@@ -474,23 +487,23 @@ function centerOn(ll,w){
 $("locate").onclick=()=>{tracking=true;startWatch();if(userLL)centerOn(userLL,PROJ.W*0.12);};
 
 /* ---- routing entrypoint ---------------------------------------------- */
-let activeDest=null,activeDestName="";
+let activeDest=null,activeDestName="",activeStartText="";
 function routeTo(destLL,name,silent){
   activeDest=destLL;activeDestName=name||"Destination";
-  if(!userLL){
-    if(!silent){toast("Getting your location…");startWatch();}
-    // show destination even without route
-    $("destName").textContent=activeDestName;
-    $("distTotal").textContent="Enable location for directions";
-    $("timeTotal").textContent="";$("steps").innerHTML="";
-    openSheet();
-    return;
-  }
-  const s=nearestNode(userLL), e=nearestNode(destLL);
+  // Start from the user's GPS only if they're inside the borey; otherwise from the fixed entrance.
+  let startLL;
+  if(userLL&&insideBorey(userLL)){startLL=userLL;activeStartText="Your location";}
+  else{startLL=FALLBACK_START;activeStartText=userLL?"Outside the borey — from entrance":"Borey entrance";}
+  // keep trying for a live fix so we can switch to real location once the user is inside
+  if(!userLL&&!silent)startWatch();
+
+  const s=nearestNode(startLL), e=nearestNode(destLL);
   const res=dijkstra(s.key,e.key);
   if(!res){toast("No route found on the street network");return;}
-  // draw route incl. the little connectors from user->graph and graph->dest
-  const coords=[userLL,...res.path.map(k=>GRAPH.coordOf.get(k)),destLL];
+  // start marker
+  const SP=PROJ.pt(startLL);startDot.setAttribute("cx",SP[0]);startDot.setAttribute("cy",SP[1]);startDot.style.display="block";
+  // draw route incl. the little connectors from start->graph and graph->dest
+  const coords=[startLL,...res.path.map(k=>GRAPH.coordOf.get(k)),destLL];
   gRoute.innerHTML="";gRoute.appendChild(el("path",{d:pathD(coords)}));
   const total=res.dist+s.dist+e.dist;
   $("distTotal").textContent=fmtDist(total);
@@ -515,7 +528,7 @@ function renderSteps(steps,total){
     d.innerHTML=`<div class="ic"><svg viewBox="0 0 24 24">${ic}</svg></div><div class="tx">${main}${sub?`<small>${sub}</small>`:""}</div>`;
     box.appendChild(d);
   };
-  add("start",ICONS.start,"Start on <b>"+(steps[0]?steps[0].name:"")+"</b>","Your location");
+  add("start",ICONS.start,"Start on <b>"+(steps[0]?steps[0].name:"")+"</b>",activeStartText||"Start");
   for(let i=0;i<steps.length;i++){
     const s=steps[i];
     if(s.type==="start")continue;
@@ -529,7 +542,7 @@ function renderSteps(steps,total){
   add("end",ICONS.end,"Arrive at <b>"+activeDestName+"</b>",fmtDist(total)+" · "+fmtTime(total));
 }
 function openSheet(){document.body.style.setProperty("--sheet","260px");$("sheet").classList.add("open");}
-function closeSheet(){document.body.style.setProperty("--sheet","0px");$("sheet").classList.remove("open");gRoute&&(gRoute.innerHTML="");activeDest=null;}
+function closeSheet(){document.body.style.setProperty("--sheet","0px");$("sheet").classList.remove("open");gRoute&&(gRoute.innerHTML="");activeDest=null;startDot&&(startDot.style.display="none");}
 $("closeSheet").onclick=closeSheet;
 
 /* ---- boot ------------------------------------------------------------- */
