@@ -262,34 +262,44 @@ function buildGraph(roads){
   }
   return {adj,coordOf,nodes:[...coordOf.keys()]};
 }
-function nearestNode(pt){
+function projectToRoad(p){ // nearest point on the nearest road segment (not just a vertex)
+  const k=Math.cos(p[1]*Math.PI/180);
   let best=null,bd=Infinity;
-  for(const k of GRAPH.nodes){const c=GRAPH.coordOf.get(k);const d=haversine(pt,c);if(d<bd){bd=d;best=k;}}
-  return {key:best,dist:bd,coord:GRAPH.coordOf.get(best)};
+  for(const r of DATA.roads){const nm=r.name||r.km||"road";
+    for(let i=0;i<r.c.length-1;i++){
+      const a=r.c[i],b=r.c[i+1];
+      const ax=a[0]*k,ay=a[1],bx=b[0]*k,by=b[1],px=p[0]*k,py=p[1];
+      const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;
+      let t=L2?((px-ax)*dx+(py-ay)*dy)/L2:0;t=t<0?0:t>1?1:t;
+      const qx=ax+t*dx,qy=ay+t*dy,d2=(px-qx)**2+(py-qy)**2;
+      if(d2<bd){bd=d2;best={q:[qx/k,qy],a,b,name:nm};}
+    }
+  }
+  return best;
 }
 // binary heap
 class Heap{constructor(){this.a=[];}push(x){const a=this.a;a.push(x);let i=a.length-1;while(i>0){const p=(i-1)>>1;if(a[p][0]<=a[i][0])break;[a[p],a[i]]=[a[i],a[p]];i=p;}}pop(){const a=this.a,top=a[0],last=a.pop();if(a.length){a[0]=last;let i=0;for(;;){let l=2*i+1,r=l+1,s=i;if(l<a.length&&a[l][0]<a[s][0])s=l;if(r<a.length&&a[r][0]<a[s][0])s=r;if(s===i)break;[a[s],a[i]]=[a[i],a[s]];i=s;}}return top;}get size(){return this.a.length;}}
-function dijkstra(startKey,endKey){
-  const dist=new Map(),prev=new Map(),h=new Heap();
-  dist.set(startKey,0);h.push([0,startKey]);
-  while(h.size){
-    const [d,u]=h.pop();
-    if(u===endKey)break;
-    if(d>(dist.get(u)??Infinity))continue;
-    for(const e of (GRAPH.adj.get(u)||[])){
-      const nd=d+e.w;
-      if(nd<(dist.get(e.to)??Infinity)){dist.set(e.to,nd);prev.set(e.to,{from:u,name:e.name});h.push([nd,e.to]);}
-    }
-  }
-  if(!prev.has(endKey)&&startKey!==endKey)return null;
-  const path=[]; let cur=endKey;
-  while(cur){path.push(cur);const p=prev.get(cur);cur=p?p.from:null;if(cur===startKey){path.push(startKey);break;}}
-  path.reverse();
-  return {path,dist:dist.get(endKey)||0};
-}
-function edgeName(ka,kb){
-  for(const e of (GRAPH.adj.get(ka)||[]))if(e.to===kb)return e.name;
-  return "road";
+const START="@S",DEST="@D";
+function routeBetween(startLL,destLL){
+  const ps=projectToRoad(startLL),pd=projectToRoad(destLL);
+  if(!ps||!pd)return null;
+  const kaS=keyOf(ps.a),kbS=keyOf(ps.b),kaD=keyOf(pd.a),kbD=keyOf(pd.b);
+  const wSa=haversine(ps.q,ps.a),wSb=haversine(ps.q,ps.b),wDa=haversine(pd.q,pd.a),wDb=haversine(pd.q,pd.b);
+  const adjOf=u=>{
+    if(u===START)return [{to:kaS,w:wSa,name:ps.name},{to:kbS,w:wSb,name:ps.name}];
+    const base=GRAPH.adj.get(u)||[];
+    if(u===kaD||u===kbD){const ex=[];if(u===kaD)ex.push({to:DEST,w:wDa,name:pd.name});if(u===kbD)ex.push({to:DEST,w:wDb,name:pd.name});return base.concat(ex);}
+    return base;
+  };
+  const dist=new Map([[START,0]]),prev=new Map(),h=new Heap();h.push([0,START]);
+  while(h.size){const [d,u]=h.pop();if(u===DEST)break;if(d>(dist.get(u)??Infinity))continue;
+    for(const e of adjOf(u)){const nd=d+e.w;if(nd<(dist.get(e.to)??Infinity)){dist.set(e.to,nd);prev.set(e.to,{from:u,name:e.name});h.push([nd,e.to]);}}}
+  if(!prev.has(DEST))return null;
+  const keys=[];let cur=DEST;while(cur){keys.push(cur);const p=prev.get(cur);cur=p?p.from:null;}keys.reverse();
+  const coordK=k=>k===START?ps.q:k===DEST?pd.q:GRAPH.coordOf.get(k);
+  const coords=keys.map(coordK);
+  const names=[];for(let i=1;i<keys.length;i++){const p=prev.get(keys[i]);names.push(p?p.name:"road");}
+  return {coords,names,total:dist.get(DEST),qS:ps.q,qD:pd.q};
 }
 function turnWord(delta){
   delta=((delta+540)%360)-180;
@@ -300,31 +310,15 @@ function turnWord(delta){
   if(a<135)return {w:"Turn "+dir,ic:dir};
   return {w:"Sharp "+dir,ic:dir};
 }
-function buildSteps(pathKeys){
-  const C=pathKeys.map(k=>GRAPH.coordOf.get(k));
-  const steps=[];
-  if(C.length<2)return steps;
-  let curName=edgeName(pathKeys[0],pathKeys[1]);
-  let acc=0, prevB=bearing(C[0],C[1]);
-  steps.push({type:"start",name:curName,dist:0});
-  for(let i=1;i<C.length-0;i++){
-    if(i<C.length){}
-  }
-  // walk segments
-  acc=0; prevB=null; curName=null;
-  let pending=null;
+function buildSteps(C,names){ // C: coords, names[i] = street of segment C[i]->C[i+1]
+  const steps=[];if(C.length<2)return steps;
+  let curName=null,acc=0,prevB=null;
   for(let i=0;i<C.length-1;i++){
-    const nm=edgeName(pathKeys[i],pathKeys[i+1]);
-    const b=bearing(C[i],C[i+1]);
-    const segLen=haversine(C[i],C[i+1]);
+    const nm=names[i]||"road";const b=bearing(C[i],C[i+1]);const segLen=haversine(C[i],C[i+1]);
     if(curName===null){curName=nm;acc=0;prevB=b;}
     else{
       const t=turnWord(b-prevB);
-      const changed = nm!==curName || t.ic!=="straight";
-      if(changed){
-        steps.push({type:"turn",name:curName,dist:acc,turn:t,onto:nm});
-        curName=nm;acc=0;
-      }
+      if(nm!==curName||t.ic!=="straight"){steps.push({type:"turn",name:curName,dist:acc,turn:t,onto:nm});curName=nm;acc=0;}
       prevB=b;
     }
     acc+=segLen;
@@ -496,19 +490,21 @@ function routeTo(destLL,name,silent){
   // keep trying for a live fix so we can switch to real location once the user is inside
   if(!userLL&&!silent)startWatch();
 
-  const s=nearestNode(startLL), e=nearestNode(destLL);
-  const res=dijkstra(s.key,e.key);
-  if(!res){toast("No route found on the street network");return;}
+  const R=routeBetween(startLL,destLL);
+  if(!R){toast("No route found on the street network");return;}
   // start marker
   const SP=PROJ.pt(startLL);startDot.setAttribute("cx",SP[0]);startDot.setAttribute("cy",SP[1]);startDot.style.display="block";
-  // draw route incl. the little connectors from start->graph and graph->dest
-  const coords=[startLL,...res.path.map(k=>GRAPH.coordOf.get(k)),destLL];
-  gRoute.innerHTML="";gRoute.appendChild(el("path",{d:pathD(coords)}));
-  const total=res.dist+s.dist+e.dist;
+  // draw: dotted connectors (point <-> road) + solid on-road route
+  gRoute.innerHTML="";
+  const dash=d=>el("path",{d,"stroke-dasharray":"1 9","stroke-linecap":"round"});
+  gRoute.appendChild(dash(pathD([startLL,R.qS])));
+  gRoute.appendChild(el("path",{d:pathD(R.coords)}));
+  gRoute.appendChild(dash(pathD([R.qD,destLL])));
+  const total=R.total+haversine(startLL,R.qS)+haversine(R.qD,destLL);
   $("distTotal").textContent=fmtDist(total);
   $("timeTotal").textContent=fmtTime(total);
   $("destName").textContent=activeDestName;
-  renderSteps(buildSteps(res.path),total);
+  renderSteps(buildSteps(R.coords,R.names),total);
   openSheet();
 }
 
