@@ -465,8 +465,8 @@ function startWatch(){
     userDot.setAttribute("cx",x);userDot.setAttribute("cy",y);userDot.style.display="block";
     const accU=(pos.coords.accuracy||0)*PROJ.S/111000; // meters -> user units (approx)
     userAcc.setAttribute("cx",x);userAcc.setAttribute("cy",y);userAcc.setAttribute("r",accU);
-    if(tracking)centerOn(userLL,vb.w<PROJ.W*0.2?vb.w:PROJ.W*0.12);
-    if(activeDest)routeTo(activeDest,activeDestName,true); // live reroute
+    if(tracking&&!activeDest)centerOn(userLL,vb.w<PROJ.W*0.2?vb.w:PROJ.W*0.12);
+    if(activeDest)routeTo(activeDest,activeDestName,true); // live reroute (keeps current view)
   },err=>{
     const m={1:"Location permission denied",2:"Location unavailable",3:"Location timed out"}[err.code]||"Location error";
     toast(m,3500);
@@ -476,6 +476,19 @@ function centerOn(ll,w){
   const P=PROJ.pt(ll),x=P[0],y=P[1];
   vb.w=w;clampZoom();
   vb.x=x-vb.w/2;vb.y=y-vb.h/2;applyVB();
+}
+function fitToRoute(coords,sheetPx){ // frame the whole route in the area ABOVE the sheet
+  let miX=Infinity,miY=Infinity,maX=-Infinity,maY=-Infinity;
+  for(const c of coords){const p=PROJ.pt(c);miX=Math.min(miX,p[0]);miY=Math.min(miY,p[1]);maX=Math.max(maX,p[0]);maY=Math.max(maY,p[1]);}
+  const rw=Math.max(maX-miX,1),rh=Math.max(maY-miY,1);
+  const cw=svg.clientWidth,ch=svg.clientHeight,ar=cw/ch;
+  const visFrac=Math.max(0.3,(ch-sheetPx)/ch);  // fraction of height not covered by the sheet
+  const pad=1.4;
+  vb.w=Math.max(rw,rh*ar/visFrac)*pad; clampZoom();
+  const cx=(miX+maX)/2,cy=(miY+maY)/2;
+  vb.x=cx-vb.w/2;
+  vb.y=cy-(vb.h*visFrac)/2;   // center the route within the visible (upper) band
+  applyVB();
 }
 $("locate").onclick=()=>{tracking=true;startWatch();if(userLL)centerOn(userLL,PROJ.W*0.12);};
 
@@ -506,6 +519,11 @@ function routeTo(destLL,name,silent){
   $("destName").textContent=activeDestName;
   renderSteps(buildSteps(R.coords,R.names),total);
   openSheet();
+  if(!silent){ // frame the route above the directions sheet (not on live reroute)
+    tracking=false;
+    const full=[startLL,...R.coords,destLL];
+    requestAnimationFrame(()=>fitToRoute(full,$("sheet").offsetHeight||260));
+  }
 }
 
 /* ---- step list UI ----------------------------------------------------- */
