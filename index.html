@@ -438,6 +438,8 @@ const PLACES=[
   {name:"សាច់គោងៀត", lng:104.816734, lat:11.570834},
   {name:"ត្រីអាំង", lng:104.816305, lat:11.573294},
   {name:"ដូងគ្រីម", lng:104.817979, lat:11.572822},
+  {name:"នំពងទា", lng:104.817343, lat:11.567610},
+  {name:"លក់អង្ករ", lng:104.818336, lat:11.569654},
 ];
 // When the user is OUTSIDE the borey (or has no GPS), routes start here instead.
 const FALLBACK_START=[104.818347,11.571888];
@@ -463,11 +465,10 @@ function startWatch(){
   if(watchId!=null)return;
   watchId=navigator.geolocation.watchPosition(pos=>{
     userLL=[pos.coords.longitude,pos.coords.latitude];
-    const P=PROJ.pt(userLL),x=P[0],y=P[1];
-    userDot.setAttribute("cx",x);userDot.setAttribute("cy",y);userDot.style.display="block";
-    const accU=(pos.coords.accuracy||0)*PROJ.S/111000; // meters -> user units (approx)
-    userAcc.setAttribute("cx",x);userAcc.setAttribute("cy",y);userAcc.setAttribute("r",accU);
-    if(tracking&&!activeDest)centerOn(userLL,vb.w<PROJ.W*0.2?vb.w:PROJ.W*0.12);
+    const inside=insideBorey(userLL);
+    const loc=inside?userLL:FALLBACK_START;        // show real location only if inside the borey
+    placeUserDot(loc,inside?pos.coords.accuracy:0);
+    if(tracking&&!activeDest)centerOn(loc,vb.w<PROJ.W*0.2?vb.w:PROJ.W*0.12);
     if(activeDest)routeTo(activeDest,activeDestName,true); // live reroute (keeps current view)
   },err=>{
     const m={1:"Location permission denied",2:"Location unavailable",3:"Location timed out"}[err.code]||"Location error";
@@ -478,6 +479,13 @@ function centerOn(ll,w){
   const P=PROJ.pt(ll),x=P[0],y=P[1];
   vb.w=w;clampZoom();
   vb.x=x-vb.w/2;vb.y=y-vb.h/2;applyVB();
+}
+function effectiveLoc(){ return (userLL&&insideBorey(userLL))?userLL:FALLBACK_START; }
+function placeUserDot(loc,accM){
+  const P=PROJ.pt(loc);
+  userDot.setAttribute("cx",P[0]);userDot.setAttribute("cy",P[1]);userDot.style.display="block";
+  userAcc.setAttribute("cx",P[0]);userAcc.setAttribute("cy",P[1]);
+  userAcc.setAttribute("r",(accM||0)*PROJ.S/111000);
 }
 function fitToRoute(coords,sheetPx){ // frame the whole route in the area ABOVE the sheet
   let miX=Infinity,miY=Infinity,maX=-Infinity,maY=-Infinity;
@@ -492,7 +500,7 @@ function fitToRoute(coords,sheetPx){ // frame the whole route in the area ABOVE 
   vb.y=cy-(vb.h*visFrac)/2;   // center the route within the visible (upper) band
   applyVB();
 }
-$("locate").onclick=()=>{tracking=true;startWatch();if(userLL)centerOn(userLL,PROJ.W*0.12);};
+$("locate").onclick=()=>{tracking=true;startWatch();const loc=effectiveLoc();placeUserDot(loc,0);centerOn(loc,PROJ.W*0.12);};
 
 /* ---- routing entrypoint ---------------------------------------------- */
 let activeDest=null,activeDestName="",activeStartText="";
