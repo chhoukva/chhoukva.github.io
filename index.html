@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Chhouk Va II — Village Map & Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f4; --block:#dfe4ea; --block-stroke:#c4ccd6;
+    --road:#ffffff; --road-stroke:#c9d2dc; --road-major:#ffe9a8; --road-major-stroke:#e6c968;
+    --label:#5a6472; --route:#2b7de9; --user:#1a73e8; --dest:#e23b3b;
+    --panel:#ffffff; --text:#1e2530; --muted:#6b7480; --accent:#1a73e8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:'Noto Sans Khmer',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);background:var(--bg)}
+  #map{position:fixed;inset:0;width:100%;height:100%;touch-action:none;background:var(--bg);display:block}
+  #map text{pointer-events:none;user-select:none}
+
+  /* Round buttons */
+  .fab{position:fixed;right:12px;width:48px;height:48px;border-radius:50%;border:none;background:var(--panel);
+    box-shadow:0 2px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer}
+  .fab svg{width:24px;height:24px;fill:var(--accent)}
+  #locate{bottom:calc(20px + var(--sheet,0px))}
+  #zin{bottom:calc(140px + var(--sheet,0px))}
+  #zout{bottom:calc(88px + var(--sheet,0px))}
+  .fab.small{width:44px;height:44px}
+  .fab.small svg{width:22px;height:22px;fill:var(--text)}
+
+  /* Directions sheet */
+  #sheet{position:fixed;left:0;right:0;bottom:0;background:var(--panel);z-index:20;
+    border-radius:18px 18px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.18);transform:translateY(100%);
+    transition:transform .25s ease;max-height:70vh;display:flex;flex-direction:column}
+  #sheet.open{transform:translateY(0)}
+  #sheetHead{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #eef0f3}
+  #sheetHead .dist{font-size:20px;font-weight:700}
+  #sheetHead .time{color:var(--muted);font-size:14px}
+  #sheetHead .to{margin-left:auto;text-align:right;font-size:13px;color:var(--muted);max-width:45%}
+  #sheetHead .to b{display:block;color:var(--text);font-size:14px}
+  #closeSheet{margin-left:6px;border:none;background:#f0f2f5;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;color:var(--muted)}
+  #steps{overflow:auto;padding:6px 0}
+  .step{display:flex;gap:12px;padding:12px 16px;align-items:flex-start}
+  .step .ic{width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:#eaf1ff;display:flex;align-items:center;justify-content:center}
+  .step .ic svg{width:18px;height:18px;fill:var(--accent)}
+  .step .tx{font-size:14px;line-height:1.35}
+  .step .tx small{color:var(--muted);display:block;margin-top:2px}
+  .step.start .ic{background:#e7f6ec}.step.start .ic svg{fill:#1e9e52}
+  .step.end .ic{background:#fdeaea}.step.end .ic svg{fill:var(--dest)}
+
+  #hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.78);color:#fff;
+    padding:14px 18px;border-radius:12px;font-size:14px;max-width:80vw;text-align:center;z-index:30;display:none}
+  #toast{position:fixed;left:50%;bottom:calc(24px + var(--sheet,0px));transform:translateX(-50%);background:#222;color:#fff;
+    padding:10px 16px;border-radius:20px;font-size:13px;z-index:40;display:none;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+  .badge{position:fixed;left:12px;bottom:16px;background:rgba(255,255,255,.85);backdrop-filter:blur(4px);
+    padding:6px 10px;border-radius:8px;font-size:11px;color:var(--muted);z-index:5}
+</style>
+</head>
+<body>
+<svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<button class="fab" id="zin" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg></button>
+<button class="fab" id="zout" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14z"/></svg></button>
+<button class="fab" id="locate" title="My location"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.9 3a9 9 0 0 0-7.9-7.9V1h-2v2.1A9 9 0 0 0 3.1 11H1v2h2.1A9 9 0 0 0 11 20.9V23h2v-2.1a9 9 0 0 0 7.9-7.9H23v-2zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/></svg></button>
+
+<div id="sheet">
+  <div id="sheetHead">
+    <div>
+      <div class="dist" id="distTotal">—</div>
+      <div class="time" id="timeTotal"></div>
+    </div>
+    <div class="to"><span>to</span><b id="destName"></b></div>
+    <button id="closeSheet">×</button>
+  </div>
+  <div id="steps"></div>
+</div>
+
+<div id="hint"></div>
+<div id="toast"></div>
+<div class="badge">Chhouk Va II · data © OpenStreetMap</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   Chhouk Va II — static village map + turn-by-turn (no backend, no tiles)
+   Data baked from OpenStreetMap into map-data.json
+   ========================================================================= */
+const SVGNS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("map");
+const $=id=>document.getElementById(id);
+
+/* ---- helpers ---------------------------------------------------------- */
+function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function toast(msg,ms=2500){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(()=>t.style.display="none",ms);}
+function hint(html){const h=$("hint");if(!html){h.style.display="none";return;}h.innerHTML=html;h.style.display="block";}
+const R=6371000;
+function haversine(a,b){ // [lng,lat]
+  const dLat=(b[1]-a[1])*Math.PI/180, dLng=(b[0]-a[0])*Math.PI/180;
+  const la1=a[1]*Math.PI/180, la2=b[1]*Math.PI/180;
+  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function bearing(a,b){
+  const la1=a[1]*Math.PI/180, la2=b[1]*Math.PI/180, dLng=(b[0]-a[0])*Math.PI/180;
+  const y=Math.sin(dLng)*Math.cos(la2);
+  const x=Math.cos(la1)*Math.sin(la2)-Math.sin(la1)*Math.cos(la2)*Math.cos(dLng);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function fmtDist(m){return m>=1000?(m/1000).toFixed(m<10000?2:1)+" km":Math.round(m)+" m";}
+function fmtTime(m){const min=Math.round(m/ (1.35*60));return min<1?"<1 min":min+" min walk";} // ~1.35 m/s
+
+/* ---- projection (set once data loads) --------------------------------- */
+let PROJ=null, HOME=null, panEnabled=false;
+function setupProj(data){
+  const [minLng,minLat,maxLng,maxLat]=data.bounds;
+  const cLat=(minLat+maxLat)/2, k=Math.cos(cLat*Math.PI/180), S=100000;
+  const bx=lng=>(lng-minLng)*k*S, by=lat=>(maxLat-lat)*S;
+  // grid orientation: each segment's offset to the nearest 90° axis (period 90°),
+  // length-weighted histogram peak + local refine -> robust to a few off-grid roads
+  const bins=new Array(90).fill(0), segs=[];
+  for(const r of data.roads)for(let i=0;i<r.c.length-1;i++){
+    const ax=bx(r.c[i][0]),ay=by(r.c[i][1]),bX=bx(r.c[i+1][0]),bY=by(r.c[i+1][1]);
+    const dx=bX-ax,dy=bY-ay,L=Math.hypot(dx,dy);if(L<3)continue; // ignore tiny segments
+    const o=Math.atan2(dy,dx)*180/Math.PI;
+    const delta=((o+45)%90+90)%90-45;        // offset to nearest axis, in [-45,45)
+    segs.push([delta,L]);
+    bins[((Math.round(o)%90)+90)%90]+=L;
+  }
+  let peak=0;for(let i=1;i<90;i++)if(bins[i]>bins[peak])peak=i;
+  const peakDelta=((peak+45)%90)-45;
+  let wd=0,ws=0;
+  for(const [d,L] of segs)if(Math.abs(d-peakDelta)<6){wd+=d*L;ws+=L;}
+  const gridDelta=ws?wd/ws:peakDelta;
+  const A=-gridDelta*Math.PI/180, ca=Math.cos(A), sa=Math.sin(A);
+  const cxb=(bx(minLng)+bx(maxLng))/2, cyb=(by(minLat)+by(maxLat))/2;
+  const rot=(X,Y)=>[ca*(X-cxb)-sa*(Y-cyb), sa*(X-cxb)+ca*(Y-cyb)];
+  const irot=(X,Y)=>[ca*X+sa*Y+cxb, -sa*X+ca*Y+cyb];
+  // extent over all geometry in rotated space, then shift origin to (0,0)
+  let miX=1e18,miY=1e18,maX=-1e18,maY=-1e18;
+  const eat=c=>{const [X,Y]=rot(bx(c[0]),by(c[1]));if(X<miX)miX=X;if(Y<miY)miY=Y;if(X>maX)maX=X;if(Y>maY)maY=Y;};
+  for(const r of data.roads)r.c.forEach(eat);
+  for(const b of data.buildings)b.c.forEach(eat);
+  if(data.borey)data.borey.forEach(eat);
+  const OX=miX,OY=miY;
+  PROJ={S,
+    pt:c=>{const [X,Y]=rot(bx(c[0]),by(c[1]));return [X-OX,Y-OY];},
+    inv:(x,y)=>{const [X,Y]=irot(x+OX,y+OY);return [minLng+X/(k*S), maxLat-Y/S];},
+    W:maX-miX, H:maY-miY};
+}
+
+/* ---- viewBox pan/zoom ------------------------------------------------- */
+let vb={x:0,y:0,w:0,h:0};
+function clampPan(){ // keep viewBox inside the map extent; center the axis that overflows
+  if(vb.w>=PROJ.W) vb.x=(PROJ.W-vb.w)/2; else vb.x=Math.min(Math.max(vb.x,0),PROJ.W-vb.w);
+  if(vb.h>=PROJ.H) vb.y=(PROJ.H-vb.h)/2; else vb.y=Math.min(Math.max(vb.y,0),PROJ.H-vb.h);
+}
+function applyVB(){
+  clampPan();
+  panEnabled = HOME ? vb.w < HOME.w*0.995 : true; // no dragging until zoomed in
+  svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  updateLabelScale();
+  updatePlaceScale();
+}
+function clampZoom(){ // clamp width, keep height locked to screen aspect
+  const ar=svg.clientWidth/svg.clientHeight;
+  const minW=PROJ.W*0.04, maxW=HOME?HOME.w:PROJ.W*1.2;
+  vb.w=Math.min(maxW,Math.max(minW,vb.w));
+  vb.h=vb.w/ar;
+}
+function fitAll(){ // fit the whole borey, centered, filling the screen
+  const ar=svg.clientWidth/svg.clientHeight, m=1.04;
+  let w=PROJ.W*m, h=PROJ.H*m;
+  if(w/h>ar){h=w/ar;}else{w=h*ar;}
+  HOME={w,h};
+  vb={x:(PROJ.W-w)/2, y:(PROJ.H-h)/2, w, h};
+  applyVB();
+}
+function screenToUser(cx,cy){
+  const r=svg.getBoundingClientRect();
+  return {x:vb.x+(cx-r.left)/r.width*vb.w, y:vb.y+(cy-r.top)/r.height*vb.h};
+}
+function zoomAt(cx,cy,factor){
+  const p=screenToUser(cx,cy);
+  vb.w*=factor; clampZoom();
+  const p2=screenToUser(cx,cy);
+  vb.x+=p.x-p2.x; vb.y+=p.y-p2.y;
+  applyVB();
+}
+// pointer handling (pan + pinch)
+const pts=new Map(); let panStart=null, pinchStart=null;
+svg.addEventListener("pointerdown",e=>{svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===1){panStart={x:e.clientX,y:e.clientY,vx:vb.x,vy:vb.y};}
+  else if(pts.size===2){const a=[...pts.values()];pinchStart={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),cx:(a[0].x+a[1].x)/2,cy:(a[0].y+a[1].y)/2,w:vb.w,h:vb.h,vx:vb.x,vy:vb.y};panStart=null;}
+});
+svg.addEventListener("pointermove",e=>{
+  if(!pts.has(e.pointerId))return;
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===1&&panStart){
+    if(!panEnabled)return;              // locked until zoomed in
+    const r=svg.getBoundingClientRect();
+    vb.x=panStart.vx-(e.clientX-panStart.x)/r.width*vb.w;
+    vb.y=panStart.vy-(e.clientY-panStart.y)/r.height*vb.h;
+    applyVB(); tracking=false;
+  }else if(pts.size===2&&pinchStart){
+    const a=[...pts.values()];const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    const f=pinchStart.d/d; vb.w=pinchStart.w*f; vb.h=pinchStart.h*f; clampZoom();
+    const r=svg.getBoundingClientRect();
+    // keep pinch center stable
+    const ux=pinchStart.vx+(pinchStart.cx-r.left)/r.width*pinchStart.w;
+    const uy=pinchStart.vy+(pinchStart.cy-r.top)/r.height*pinchStart.h;
+    vb.x=ux-(pinchStart.cx-r.left)/r.width*vb.w;
+    vb.y=uy-(pinchStart.cy-r.top)/r.height*vb.h;
+    applyVB(); tracking=false;
+  }
+});
+function up(e){pts.delete(e.pointerId);if(pts.size<2)pinchStart=null;if(pts.size===0)panStart=null;}
+svg.addEventListener("pointerup",up);svg.addEventListener("pointercancel",up);
+svg.addEventListener("wheel",e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY>0?1.15:0.87);tracking=false;},{passive:false});
+$("zin").onclick=()=>zoomAt(innerWidth/2,innerHeight/2,0.7);
+$("zout").onclick=()=>zoomAt(innerWidth/2,innerHeight/2,1.4);
+
+// tap (no drag) on a red pin -> directions to that predefined place
+let downXY=null;
+svg.addEventListener("pointerdown",e=>{if(pts.size===1)downXY={x:e.clientX,y:e.clientY,t:Date.now()};});
+svg.addEventListener("pointerup",e=>{
+  if(!downXY)return;const dx=e.clientX-downXY.x,dy=e.clientY-downXY.y;
+  if(Math.hypot(dx,dy)<6 && Date.now()-downXY.t<450 && pts.size===0){
+    const u=screenToUser(e.clientX,e.clientY);
+    const thr=34*vb.w/svg.clientWidth;   // pin tap radius
+    let best=null,bd=thr;
+    for(const p of PLACES){const P=PROJ.pt([p.lng,p.lat]);const d=Math.hypot(P[0]-u.x,P[1]-u.y);if(d<bd){bd=d;best=p;}}
+    if(best)routeTo([best.lng,best.lat],best.name);
+  }
+  downXY=null;
+});
+
+/* ---- label scaling (keep labels readable at any zoom) ----------------- */
+let gLabels;
+function updateLabelScale(){
+  if(!gLabels)return;
+  const px=16; // on-screen street-label size in px (was ~14; +2)
+  gLabels.setAttribute("font-size",(px*vb.w/svg.clientWidth).toFixed(2));
+  gLabels.style.display="block";
+}
+
+/* ---- graph / routing -------------------------------------------------- */
+let DATA=null, GRAPH=null;
+function keyOf(c){return c[0].toFixed(6)+","+c[1].toFixed(6);}
+function buildGraph(roads){
+  const adj=new Map();           // key -> [{to,w,name,coord}]
+  const coordOf=new Map();       // key -> [lng,lat]
+  function add(a,b,name){
+    const ka=keyOf(a),kb=keyOf(b),w=haversine(a,b);
+    coordOf.set(ka,a);coordOf.set(kb,b);
+    if(!adj.has(ka))adj.set(ka,[]);if(!adj.has(kb))adj.set(kb,[]);
+    adj.get(ka).push({to:kb,w,name});
+    adj.get(kb).push({to:ka,w,name});
+  }
+  for(const r of roads){
+    const nm=r.name||r.km||"road";
+    for(let i=0;i<r.c.length-1;i++)add(r.c[i],r.c[i+1],nm);
+  }
+  return {adj,coordOf,nodes:[...coordOf.keys()]};
+}
+function nearestNode(pt){
+  let best=null,bd=Infinity;
+  for(const k of GRAPH.nodes){const c=GRAPH.coordOf.get(k);const d=haversine(pt,c);if(d<bd){bd=d;best=k;}}
+  return {key:best,dist:bd,coord:GRAPH.coordOf.get(best)};
+}
+// binary heap
+class Heap{constructor(){this.a=[];}push(x){const a=this.a;a.push(x);let i=a.length-1;while(i>0){const p=(i-1)>>1;if(a[p][0]<=a[i][0])break;[a[p],a[i]]=[a[i],a[p]];i=p;}}pop(){const a=this.a,top=a[0],last=a.pop();if(a.length){a[0]=last;let i=0;for(;;){let l=2*i+1,r=l+1,s=i;if(l<a.length&&a[l][0]<a[s][0])s=l;if(r<a.length&&a[r][0]<a[s][0])s=r;if(s===i)break;[a[s],a[i]]=[a[i],a[s]];i=s;}}return top;}get size(){return this.a.length;}}
+function dijkstra(startKey,endKey){
+  const dist=new Map(),prev=new Map(),h=new Heap();
+  dist.set(startKey,0);h.push([0,startKey]);
+  while(h.size){
+    const [d,u]=h.pop();
+    if(u===endKey)break;
+    if(d>(dist.get(u)??Infinity))continue;
+    for(const e of (GRAPH.adj.get(u)||[])){
+      const nd=d+e.w;
+      if(nd<(dist.get(e.to)??Infinity)){dist.set(e.to,nd);prev.set(e.to,{from:u,name:e.name});h.push([nd,e.to]);}
+    }
+  }
+  if(!prev.has(endKey)&&startKey!==endKey)return null;
+  const path=[]; let cur=endKey;
+  while(cur){path.push(cur);const p=prev.get(cur);cur=p?p.from:null;if(cur===startKey){path.push(startKey);break;}}
+  path.reverse();
+  return {path,dist:dist.get(endKey)||0};
+}
+function edgeName(ka,kb){
+  for(const e of (GRAPH.adj.get(ka)||[]))if(e.to===kb)return e.name;
+  return "road";
+}
+function turnWord(delta){
+  delta=((delta+540)%360)-180;
+  const a=Math.abs(delta);
+  if(a<20)return {w:"Continue straight",ic:"straight"};
+  const dir=delta>0?"right":"left";
+  if(a<50)return {w:"Slight "+dir,ic:dir};
+  if(a<135)return {w:"Turn "+dir,ic:dir};
+  return {w:"Sharp "+dir,ic:dir};
+}
+function buildSteps(pathKeys){
+  const C=pathKeys.map(k=>GRAPH.coordOf.get(k));
+  const steps=[];
+  if(C.length<2)return steps;
+  let curName=edgeName(pathKeys[0],pathKeys[1]);
+  let acc=0, prevB=bearing(C[0],C[1]);
+  steps.push({type:"start",name:curName,dist:0});
+  for(let i=1;i<C.length-0;i++){
+    if(i<C.length){}
+  }
+  // walk segments
+  acc=0; prevB=null; curName=null;
+  let pending=null;
+  for(let i=0;i<C.length-1;i++){
+    const nm=edgeName(pathKeys[i],pathKeys[i+1]);
+    const b=bearing(C[i],C[i+1]);
+    const segLen=haversine(C[i],C[i+1]);
+    if(curName===null){curName=nm;acc=0;prevB=b;}
+    else{
+      const t=turnWord(b-prevB);
+      const changed = nm!==curName || t.ic!=="straight";
+      if(changed){
+        steps.push({type:"turn",name:curName,dist:acc,turn:t,onto:nm});
+        curName=nm;acc=0;
+      }
+      prevB=b;
+    }
+    acc+=segLen;
+  }
+  steps.push({type:"turn",name:curName,dist:acc,last:true});
+  return steps;
+}
+
+/* ---- rendering -------------------------------------------------------- */
+let gRoute,gMarkers,gPlaces,userDot,userAcc;
+function pathD(coords){return coords.map((c,i)=>{const p=PROJ.pt(c);return (i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1);}).join(" ");}
+function render(){
+  svg.innerHTML="";
+  if(DATA.borey){ // shaded borey boundary
+    svg.appendChild(el("path",{d:pathD(DATA.borey)+"Z",fill:"#dbe9ff",stroke:"#7aa7e0","stroke-width":"2","stroke-dasharray":"9 6","vector-effect":"non-scaling-stroke",opacity:"0.7"}));
+  }
+  const gB=el("g",{fill:"var(--block)",stroke:"var(--block-stroke)","stroke-width":"0.6","vector-effect":"non-scaling-stroke"});
+  for(const b of DATA.buildings){gB.appendChild(el("path",{d:pathD(b.c)+"Z"}));}
+  svg.appendChild(gB);
+
+  const majors=new Set(["tertiary","secondary","primary","trunk"]);
+  const gRminor=el("g",{fill:"none",stroke:"var(--road-stroke)","stroke-width":"3","stroke-linecap":"round","stroke-linejoin":"round","vector-effect":"non-scaling-stroke"});
+  const gRcasing=el("g",{fill:"none",stroke:"var(--road-major-stroke)","stroke-width":"7","stroke-linecap":"round","stroke-linejoin":"round","vector-effect":"non-scaling-stroke"});
+  const gRfill=el("g",{fill:"none",stroke:"var(--road-major)","stroke-width":"5","stroke-linecap":"round","stroke-linejoin":"round","vector-effect":"non-scaling-stroke"});
+  for(const r of DATA.roads){
+    if(majors.has(r.hw)){gRcasing.appendChild(el("path",{d:pathD(r.c)}));gRfill.appendChild(el("path",{d:pathD(r.c)}));}
+    else gRminor.appendChild(el("path",{d:pathD(r.c)}));
+  }
+  svg.appendChild(gRminor);svg.appendChild(gRcasing);svg.appendChild(gRfill);
+
+  gRoute=el("g",{fill:"none",stroke:"var(--route)","stroke-width":"6","stroke-linecap":"round","stroke-linejoin":"round","vector-effect":"non-scaling-stroke",opacity:"0.9"});
+  svg.appendChild(gRoute);
+
+  // street name labels — one per unique name, along the longest segment of that road
+  gLabels=el("g",{fill:"var(--label)","font-weight":"600","text-anchor":"middle","dominant-baseline":"central",style:"paint-order:stroke;stroke:#eef1f4;stroke-width:2.5px"});
+  // group all pieces per street name, label the longest piece at its arc-length midpoint,
+  // with the angle snapped to exactly horizontal or vertical (grid is axis-aligned)
+  const byName=new Map();
+  for(const r of DATA.roads){if(!r.name)continue;(byName.get(r.name)||byName.set(r.name,[]).get(r.name)).push(r.c);}
+  // column-X for horizontal labels = midway between vertical streets "Street 5" and "Street 3"
+  const avgX=name=>{let s=0,n=0;for(const r of DATA.roads)if(r.name===name)for(const c of r.c){s+=PROJ.pt(c)[0];n++;}return n?s/n:null;};
+  const avgY=name=>{let s=0,n=0;for(const r of DATA.roads)if(r.name===name)for(const c of r.c){s+=PROJ.pt(c)[1];n++;}return n?s/n:null;};
+  const x5=avgX("Street 5"),x3=avgX("Street 3");
+  const colX=(x5!=null&&x3!=null)?(x5+x3)/2:null;      // vertical column for horizontal labels
+  const y18=avgY("Street 18"),y20=avgY("Street 20");
+  const rowY=(y18!=null&&y20!=null)?(y18+y20)/2:null;   // horizontal row for vertical labels
+  const yAtX=(P,X)=>{ // y where polyline P crosses vertical line x=X (else null)
+    for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1];
+      if(a[0]!==b[0]&&(a[0]-X)*(b[0]-X)<=0){const t=(X-a[0])/(b[0]-a[0]);return a[1]+(b[1]-a[1])*t;}}
+    return null;
+  };
+  const xAtY=(P,Y)=>{ // x where polyline P crosses horizontal line y=Y (else null)
+    for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1];
+      if(a[1]!==b[1]&&(a[1]-Y)*(b[1]-Y)<=0){const t=(Y-a[1])/(b[1]-a[1]);return a[0]+(b[0]-a[0])*t;}}
+    return null;
+  };
+  for(const [nm,pieces] of byName){
+    let best=null,bestLen=-1;
+    for(const c of pieces){
+      const P=c.map(pt=>PROJ.pt(pt));let L=0;
+      for(let i=0;i<P.length-1;i++)L+=Math.hypot(P[i+1][0]-P[i][0],P[i+1][1]-P[i][1]);
+      if(L>bestLen){bestLen=L;best=P;}
+    }
+    if(!best||best.length<2)continue;
+    const half=bestLen/2;let acc=0,mid=best[0];
+    for(let i=0;i<best.length-1;i++){
+      const s=Math.hypot(best[i+1][0]-best[i][0],best[i+1][1]-best[i][1]);
+      if(acc+s>=half){const t=s?(half-acc)/s:0;mid=[best[i][0]+(best[i+1][0]-best[i][0])*t,best[i][1]+(best[i+1][1]-best[i][1])*t];break;}
+      acc+=s;
+    }
+    const dx=best[best.length-1][0]-best[0][0],dy=best[best.length-1][1]-best[0][1];
+    const horizontal=Math.abs(dx)>=Math.abs(dy);
+    let lx=mid[0],ly=mid[1];
+    if(horizontal){ // stack horizontal labels in one vertical column
+      if(colX!=null){const y=yAtX(best,colX);if(y!=null){lx=colX;ly=y;}}
+    }else{ // line vertical labels up in one horizontal row
+      if(rowY!=null){const x=xAtY(best,rowY);if(x!=null){lx=x;ly=rowY;}}
+    }
+    const ang=horizontal?0:-90; // snap: horizontal or vertical
+    const t=el("text",{x:lx.toFixed(1),y:ly.toFixed(1),transform:`rotate(${ang} ${lx.toFixed(1)} ${ly.toFixed(1)})`});
+    t.textContent=nm;
+    gLabels.appendChild(t);
+  }
+  svg.appendChild(gLabels);
+
+  gPlaces=el("g",{});svg.appendChild(gPlaces);
+  gMarkers=el("g",{});svg.appendChild(gMarkers);
+  // user dot
+  userAcc=el("circle",{r:0,fill:"rgba(26,115,232,.15)",stroke:"none"});
+  userDot=el("circle",{r:5,fill:"var(--user)",stroke:"#fff","stroke-width":"2","vector-effect":"non-scaling-stroke",style:"display:none"});
+  gMarkers.appendChild(userAcc);gMarkers.appendChild(userDot);
+  renderPlaces();
+  updateLabelScale();
+}
+function renderPlaces(){ // fixed red pins for predefined locations only
+  if(!gPlaces)return; gPlaces.innerHTML="";
+  for(const p of PLACES){
+    const g=el("g",{});
+    const lbl=el("text",{x:"0",y:"-30",fill:"var(--dest)","text-anchor":"middle","font-size":"13","font-weight":"700",style:"paint-order:stroke;stroke:#fff;stroke-width:3px"});
+    lbl.textContent=p.name; g.appendChild(lbl);
+    g.appendChild(el("path",{d:"M0 0 c -6 -9 -9 -12 -9 -18 a9 9 0 1 1 18 0 c 0 6 -3 9 -9 18 Z",fill:"var(--dest)",stroke:"#fff","stroke-width":"1.5"}));
+    g.appendChild(el("circle",{cx:"0",cy:"-18",r:"3.2",fill:"#fff"}));
+    g._ll=[p.lng,p.lat];
+    gPlaces.appendChild(g);
+  }
+  updatePlaceScale();
+}
+function updatePlaceScale(){ // keep pins a constant on-screen size
+  if(!gPlaces||!PROJ)return; const k=vb.w/svg.clientWidth;
+  for(const g of gPlaces.children){const P=PROJ.pt(g._ll);g.setAttribute("transform",`translate(${P[0].toFixed(1)} ${P[1].toFixed(1)}) scale(${k.toFixed(3)})`);}
+}
+
+/* ---- predefined destinations ----------------------------------------- */
+/* Only these show a red pin. Add more as {name, lng, lat}. lng first, then lat. */
+const PLACES=[
+  {name:"សាច់គោងៀត", lng:104.81659372797475, lat:11.57151299561483},
+];
+
+/* ---- geolocation ------------------------------------------------------ */
+let userLL=null, tracking=false, watchId=null;
+function startWatch(){
+  if(!("geolocation" in navigator)){toast("Geolocation not supported");return;}
+  if(!window.isSecureContext && location.hostname!=="localhost"){
+    hint("📍 Location needs <b>HTTPS</b>.<br>Host this page on GitHub Pages / Netlify,<br>then location will work. (You can still browse the map.)");
+    setTimeout(()=>hint(null),4200);
+  }
+  tracking=true;
+  if(watchId!=null)return;
+  watchId=navigator.geolocation.watchPosition(pos=>{
+    userLL=[pos.coords.longitude,pos.coords.latitude];
+    const P=PROJ.pt(userLL),x=P[0],y=P[1];
+    userDot.setAttribute("cx",x);userDot.setAttribute("cy",y);userDot.style.display="block";
+    const accU=(pos.coords.accuracy||0)*PROJ.S/111000; // meters -> user units (approx)
+    userAcc.setAttribute("cx",x);userAcc.setAttribute("cy",y);userAcc.setAttribute("r",accU);
+    if(tracking)centerOn(userLL,vb.w<PROJ.W*0.2?vb.w:PROJ.W*0.12);
+    if(activeDest)routeTo(activeDest,activeDestName,true); // live reroute
+  },err=>{
+    const m={1:"Location permission denied",2:"Location unavailable",3:"Location timed out"}[err.code]||"Location error";
+    toast(m,3500);
+  },{enableHighAccuracy:true,maximumAge:3000,timeout:12000});
+}
+function centerOn(ll,w){
+  const P=PROJ.pt(ll),x=P[0],y=P[1];
+  vb.w=w;clampZoom();
+  vb.x=x-vb.w/2;vb.y=y-vb.h/2;applyVB();
+}
+$("locate").onclick=()=>{tracking=true;startWatch();if(userLL)centerOn(userLL,PROJ.W*0.12);};
+
+/* ---- routing entrypoint ---------------------------------------------- */
+let activeDest=null,activeDestName="";
+function routeTo(destLL,name,silent){
+  activeDest=destLL;activeDestName=name||"Destination";
+  if(!userLL){
+    if(!silent){toast("Getting your location…");startWatch();}
+    // show destination even without route
+    $("destName").textContent=activeDestName;
+    $("distTotal").textContent="Enable location for directions";
+    $("timeTotal").textContent="";$("steps").innerHTML="";
+    openSheet();
+    return;
+  }
+  const s=nearestNode(userLL), e=nearestNode(destLL);
+  const res=dijkstra(s.key,e.key);
+  if(!res){toast("No route found on the street network");return;}
+  // draw route incl. the little connectors from user->graph and graph->dest
+  const coords=[userLL,...res.path.map(k=>GRAPH.coordOf.get(k)),destLL];
+  gRoute.innerHTML="";gRoute.appendChild(el("path",{d:pathD(coords)}));
+  const total=res.dist+s.dist+e.dist;
+  $("distTotal").textContent=fmtDist(total);
+  $("timeTotal").textContent=fmtTime(total);
+  $("destName").textContent=activeDestName;
+  renderSteps(buildSteps(res.path),total);
+  openSheet();
+}
+
+/* ---- step list UI ----------------------------------------------------- */
+const ICONS={
+  straight:'<path d="M12 2l5 5h-3v14h-4V7H7z"/>',
+  left:'<path d="M9 6l-6 6 6 6v-4h8V8H9z"/>',
+  right:'<path d="M15 6l6 6-6 6v-4H7V8h8z"/>',
+  start:'<circle cx="12" cy="12" r="6"/>',
+  end:'<path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/>'
+};
+function renderSteps(steps,total){
+  const box=$("steps");box.innerHTML="";
+  const add=(cls,ic,main,sub)=>{
+    const d=document.createElement("div");d.className="step "+cls;
+    d.innerHTML=`<div class="ic"><svg viewBox="0 0 24 24">${ic}</svg></div><div class="tx">${main}${sub?`<small>${sub}</small>`:""}</div>`;
+    box.appendChild(d);
+  };
+  add("start",ICONS.start,"Start on <b>"+(steps[0]?steps[0].name:"")+"</b>","Your location");
+  for(let i=0;i<steps.length;i++){
+    const s=steps[i];
+    if(s.type==="start")continue;
+    if(s.last){continue;}
+    if(s.turn){
+      add("",ICONS[s.turn.ic]||ICONS.straight,
+        `${s.turn.w}${s.onto&&s.onto!==s.name?` onto <b>${s.onto}</b>`:""}`,
+        `Continue ${fmtDist(s.dist)} on ${s.name}`);
+    }
+  }
+  add("end",ICONS.end,"Arrive at <b>"+activeDestName+"</b>",fmtDist(total)+" · "+fmtTime(total));
+}
+function openSheet(){document.body.style.setProperty("--sheet","260px");$("sheet").classList.add("open");}
+function closeSheet(){document.body.style.setProperty("--sheet","0px");$("sheet").classList.remove("open");gRoute&&(gRoute.innerHTML="");activeDest=null;}
+$("closeSheet").onclick=closeSheet;
+
+/* ---- boot ------------------------------------------------------------- */
+fetch("map-data.json").then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(data=>{
+  DATA=data;setupProj(data);GRAPH=buildGraph(data.roads);
+  render();fitAll();
+  toast("Tap the red pin to get directions",3500);
+}).catch(err=>{
+  hint("Could not load <b>map-data.json</b> ("+err.message+").<br>Run this page from a web server or GitHub Pages,<br>not by double-clicking the file.");
+});
+addEventListener("resize",()=>{if(PROJ)fitAll();});
+</script>
+</body>
+</html>
